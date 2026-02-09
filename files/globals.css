@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer base {
+  :root {
+    --background: 220 20% 7%;
+    --foreground: 210 20% 90%;
+    --card: 220 18% 10%;
+    --card-foreground: 210 20% 90%;
+    --popover: 220 18% 10%;
+    --popover-foreground: 210 20% 90%;
+    --primary: 165 82% 51%;
+    --primary-foreground: 220 20% 7%;
+    --secondary: 220 15% 15%;
+    --secondary-foreground: 210 20% 85%;
+    --muted: 220 14% 14%;
+    --muted-foreground: 215 15% 55%;
+    --accent: 200 90% 50%;
+    --accent-foreground: 220 20% 7%;
+    --destructive: 350 90% 55%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 14% 16%;
+    --input: 220 14% 16%;
+    --ring: 165 82% 51%;
+    --chart-1: 165 82% 51%;
+    --chart-2: 200 90% 50%;
+    --chart-3: 350 90% 55%;
+    --chart-4: 35 92% 55%;
+    --chart-5: 280 65% 60%;
+    --radius: 0.625rem;
+    --warning: 35 92% 55%;
+    --warning-foreground: 220 20% 7%;
+    --success: 165 82% 51%;
+    --success-foreground: 220 20% 7%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
