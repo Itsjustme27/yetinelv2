@@ -1,0 +1,145 @@
+[
+  {
+    "id": "brute-force-ssh",
+    "name": "SSH Brute Force Detection",
+    "description": "Detects 5 or more failed SSH logins within 60 seconds from the same IP",
+    "enabled": true,
+    "severity": "critical",
+    "rule_type": "threshold",
+    "conditions": {
+      "field": "parsed_data.auth_type",
+      "equals": "ssh",
+      "additional": {
+        "field": "parsed_data.auth_result",
+        "equals": "failure"
+      },
+      "threshold": 5,
+      "window_seconds": 60,
+      "group_by": "parsed_data.source_ip"
+    },
+    "actions": { "alert": true }
+  },
+  {
+    "id": "login-after-failures",
+    "name": "Successful Login After Failures",
+    "description": "Detects successful login following 3+ failed attempts (potential compromise indicator)",
+    "enabled": true,
+    "severity": "critical",
+    "rule_type": "correlation",
+    "conditions": {
+      "sequence": [
+        {
+          "count": 3,
+          "window_seconds": 300,
+          "match": {
+            "field": "parsed_data.auth_result",
+            "equals": "failure"
+          }
+        },
+        {
+          "match": {
+            "field": "parsed_data.auth_result",
+            "equals": "success"
+          }
+        }
+      ],
+      "group_by": "parsed_data.source_ip"
+    },
+    "actions": { "alert": true }
+  },
+  {
+    "id": "privilege-escalation-sudo",
+    "name": "Sudo to Root",
+    "description": "Detects privilege escalation to root via sudo",
+    "enabled": true,
+    "severity": "warning",
+    "rule_type": "signature",
+    "conditions": {
+      "field": "event_type",
+      "equals": "privilege",
+      "additional": {
+        "field": "parsed_data.target_user",
+        "equals": "root"
+      }
+    },
+    "actions": { "alert": true }
+  },
+  {
+    "id": "new-service-installed",
+    "name": "New Service Installation",
+    "description": "Detects new Windows service installation (Event ID 7045/4697)",
+    "enabled": true,
+    "severity": "warning",
+    "rule_type": "signature",
+    "conditions": {
+      "any": [
+        { "field": "parsed_data.event_id", "equals": 7045 },
+        { "field": "parsed_data.event_id", "equals": 4697 }
+      ]
+    },
+    "actions": { "alert": true }
+  },
+  {
+    "id": "process-from-temp",
+    "name": "Process Execution from Temp Directory",
+    "description": "Detects processes running from temporary directories (common malware behavior)",
+    "enabled": true,
+    "severity": "warning",
+    "rule_type": "signature",
+    "conditions": {
+      "field": "parsed_data.new_process_name",
+      "contains_any": ["\\temp\\", "\\tmp\\", "/tmp/", "appdata\\local\\temp"]
+    },
+    "actions": { "alert": true }
+  },
+  {
+    "id": "audit-log-cleared",
+    "name": "Security Audit Log Cleared",
+    "description": "Detects when security audit logs are cleared (Event ID 1102)",
+    "enabled": true,
+    "severity": "critical",
+    "rule_type": "signature",
+    "conditions": {
+      "field": "parsed_data.event_id",
+      "equals": 1102
+    },
+    "actions": { "alert": true }
+  },
+  {
+    "id": "external-ssh-login",
+    "name": "SSH Login from External IP",
+    "description": "Detects SSH logins from non-RFC1918 IP addresses",
+    "enabled": true,
+    "severity": "warning",
+    "rule_type": "signature",
+    "conditions": {
+      "field": "parsed_data.auth_type",
+      "equals": "ssh",
+      "additional": {
+        "field": "parsed_data.auth_result",
+        "equals": "success"
+      },
+      "not": {
+        "field": "parsed_data.source_ip",
+        "matches": "^(10\\.|172\\.(1[6-9]|2[0-9]|3[01])\\.|192\\.168\\.|127\\.|::1|localhost)"
+      }
+    },
+    "actions": { "alert": true }
+  },
+  {
+    "id": "failed-login-burst",
+    "name": "Failed Login Burst",
+    "description": "Detects 10 or more failed logins within 5 minutes (any auth type)",
+    "enabled": true,
+    "severity": "warning",
+    "rule_type": "threshold",
+    "conditions": {
+      "field": "parsed_data.auth_result",
+      "equals": "failure",
+      "threshold": 10,
+      "window_seconds": 300,
+      "group_by": "hostname"
+    },
+    "actions": { "alert": true }
+  }
+]
