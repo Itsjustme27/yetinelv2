@@ -1,0 +1,14 @@
+name: Security Scan
+on: [push]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          cd backend && npm install
+          cd ../files && npm install
+      - name: Run Security Lint
+        run: cd backend && npx eslint .
