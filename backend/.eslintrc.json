@@ -1,8 +1,0 @@
-{
-  "plugins": ["security"],
-  "extends": ["eslint:recommended", "plugin:security/recommended"],
-  "env": {
-    "node": true,
-    "es6": true
-  }
-}

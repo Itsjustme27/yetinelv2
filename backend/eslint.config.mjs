@@ -1,29 +1,23 @@
-import { defineConfig } from "eslint/config";
-import security from "eslint-plugin-security";
-import globals from "globals";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import js from "@eslint/js";
-import { FlatCompat } from "@eslint/eslintrc";
+import security from 'eslint-plugin-security';
+import js from '@eslint/js';
+import globals from 'globals';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const compat = new FlatCompat({
-    baseDirectory: __dirname,
-    recommendedConfig: js.configs.recommended,
-    allConfig: js.configs.all
-});
-
-export default defineConfig([{
-    extends: compat.extends("eslint:recommended", "plugin:security/recommended"),
-
+export default [
+  js.configs.recommended,
+  {
+    files: ['**/*.js'],
     plugins: {
-        security,
+      security,
     },
-
     languageOptions: {
-        globals: {
-            ...globals.node,
-        },
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+      },
     },
-}]);
+    rules: {
+      ...security.configs.recommended.rules,
+    },
+  },
+];
