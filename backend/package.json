@@ -17,6 +17,8 @@
     "ws": "^8.14.2"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.0.0",
+    "@eslint/js": "^9.0.0",
     "eslint": "^10.0.0",
     "eslint-plugin-security": "^3.0.1",
     "globals": "^17.3.0"
