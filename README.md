@@ -110,8 +110,8 @@ Mini SIEM transforms security log data into actionable intelligence. It collects
 
 ```bash
 # Clone and navigate to project directory
-git clone https://github.com/YOUR_USERNAME/mini-siem.git
-cd mini-siem
+git clone https://github.com/YOUR_USERNAME/mini-siem.git](https://github.com/Itsjustme27/yetinelv2.git
+cd yetinelv2
 
 # Install backend dependencies
 cd backend
