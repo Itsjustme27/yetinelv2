@@ -937,3 +937,8 @@ CREATE TABLE rules (
 ## Support
 
 For issues and feature requests, please check the troubleshooting section or open an issue in the project repository.
+
+
+![Build Status](https://github.com/Itsjustme27/yetinelv2/actions/workflows/security-scan.yml/badge.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Node Version](https://img.shields.io/badge/node-%3E%3D18-blue.svg)
