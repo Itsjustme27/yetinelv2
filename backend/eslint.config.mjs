@@ -18,6 +18,12 @@ export default [
     },
     rules: {
       ...security.configs.recommended.rules,
+      "no-unused-vars": ["error", { 
+    "argsIgnorePattern": "^_", 
+    "varsIgnorePattern": "^_",
+    "caughtErrorsIgnorePattern": "^_" 
+  }],
+  "no-undef": "error"
     },
   },
 ];

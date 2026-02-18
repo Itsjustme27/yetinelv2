@@ -1,5 +1,4 @@
 const WebSocket = require('ws');
-const url = require('url');
 
 let wss = null;
 
@@ -34,7 +33,7 @@ function initWebSocket(server) {
             try {
                 const message = JSON.parse(data);
                 handleMessage(ws, message);
-            } catch (err) {
+            } catch (_) {
                 ws.send(JSON.stringify({
                     type: 'error',
                     message: 'Invalid JSON message'

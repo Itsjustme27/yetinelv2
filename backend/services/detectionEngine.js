@@ -165,7 +165,7 @@ function loadDefaultRules() {
             const fileRules = JSON.parse(fs.readFileSync(rulesPath, 'utf8'));
             rules = fileRules;
             console.log('[DETECTION] Loaded rules from file:', rulesPath);
-        } catch (e) {
+        } catch (_e) {
             console.log('[DETECTION] Using embedded default rules');
         }
     } else {
@@ -238,7 +238,7 @@ function matchesCondition(event, condition) {
         try {
             const regex = new RegExp(condition.matches, 'i');
             if (!fieldValue || !regex.test(String(fieldValue))) return false;
-        } catch (e) {
+        } catch (_e) {
             return false;
         }
     }

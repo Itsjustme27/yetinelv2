@@ -199,7 +199,7 @@ function parse(rawData, metadata = {}) {
     if (typeof rawData === 'string') {
         try {
             event = JSON.parse(rawData);
-        } catch (e) {
+        } catch (_) {
             // Not valid JSON, return basic event
             return {
                 timestamp: new Date().toISOString(),
