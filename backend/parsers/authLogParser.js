@@ -8,10 +8,9 @@ const PATTERNS = {
     // SSH patterns
     SSH_FAILED: /Failed (?:password|publickey) for (?:invalid user )?(\S+) from (\S+) port (\d+)/i,
     SSH_SUCCESS: /Accepted (?:password|publickey) for (\S+) from (\S+) port (\d+)/i,
-    SSH_DISCONNECT: /Disconnected from (?:user )?(\S+)?\s*(\S+) port (\d+)/i,
-    SSH_INVALID_USER: /Invalid user (\S+) from (\S+)/i,
-    SSH_CONNECTION_CLOSED: /Connection closed by (?:authenticating user )?(\S+)?\s*(\S+) port (\d+)/i,
-
+    SSH_DISCONNECT: /Disconnected from (?:user ([a-zA-Z0-9._-]+) )?([0-9a-fA-F.:]+) port (\d+)/i, 
+    SSH_INVALID_USER: /Invalid user ([a-zA-Z0-9._-]+) from ([0-9a-fA-F.:]+)/i,
+    SSH_CONNECTION_CLOSED: /Connection closed by (?:authenticating user ([a-zA-Z0-9._-]+) )?([0-9a-fA-F.:]+) port (\d+)/i,
     // Sudo patterns
     SUDO_SUCCESS: /(\S+) : TTY=(\S+) ; PWD=([^;]+) ; USER=(\S+) ; COMMAND=(.*)/,
     SUDO_FAILURE: /(\S+) : .*authentication failure.*/i,
