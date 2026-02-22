@@ -2,13 +2,31 @@ name: Security Scan
 on: [push]
 
 jobs:
-  lint:
+  backend-security:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install dependencies
-        run: |
-          cd backend && npm install
-          cd ../files && npm install
-      - name: Run Security Lint
+      
+      - name: Install Backend Dependencies
+        run: cd backend && npm install
+        
+      - name: Backend Lint (SAST)
         run: cd backend && npx eslint .
+        
+      - name: Backend Audit (SCA)
+        run: cd backend && npm audit --audit-level=high
+
+  frontend-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Frontend Dependencies
+        run: cd files && npm install
+        
+      - name: Frontend Lint (SAST)
+        # This will fail if your frontend doesn't have an eslint config yet!
+        run: cd files && npx eslint .
+        
+      - name: Frontend Audit (SCA)
+        run: cd files && npm audit --audit-level=high

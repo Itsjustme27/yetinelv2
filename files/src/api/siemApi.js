@@ -16,11 +16,15 @@ class SiemApiError extends Error {
 
 async function request(endpoint, options = {}) {
     const url = `${API_BASE}${endpoint}`;
+    
+    const token = localStorage.getItem('siem_token');
+    const authHeader = token ? { 'Authorization': `Bearer ${token}` } : {};
 
     const config = {
         ...options,
         headers: {
             'Content-Type': 'application/json',
+            ...authHeader,
             ...options.headers
         }
     };
@@ -58,6 +62,25 @@ async function request(endpoint, options = {}) {
 export async function checkHealth() {
     return request('/health');
 }
+
+
+// AUTH API
+const getAuthHeader = () => {
+  const token = localStorage.getItem('siem_token');
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+};
+
+export const fetchRules = async () => {
+  const response = await fetch(`${API_BASE}/rules`, {
+    headers: {
+      ...getAuthHeader(),
+      'Content-Type': 'application/json'
+    }
+  });
+  return response.json();
+}
+
+
 
 // Events API
 export async function getEvents(options = {}) {

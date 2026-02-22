@@ -1,9 +1,26 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useContext } from 'react';
 import { Shield, AlertTriangle, Activity, Eye, Database, Network, CheckCircle, Clock, TrendingUp, Server, Cpu, Wifi, WifiOff, RefreshCw, Zap, Search, X } from 'lucide-react';
 import siemApi from './api/siemApi';
+import Login from './components/Login';
+import { AuthContext, AuthProvider } from './context/AuthContext.js';
 import { useWebSocket, ConnectionState } from './hooks/useWebSocket';
+
+
+const AppContent = () => {
+  const { token } = useContext(AuthContext);
+
+  if (!token) {
+    return <Login />;
+  }
+
+  return <MiniSIEM />;
+
+}
+
+
+
 
 // ── Inline SVG Chart Components ─────────────────────────────────────────────
 
@@ -136,6 +153,7 @@ const MiniSIEM = () => {
   const [severityFilter, setSeverityFilter] = useState('');
   const [filteredEvents, setFilteredEvents] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
+  const { logout } = useContext(AuthContext);
 
   // WebSocket handlers
   const handleEventMessage = useCallback((message) => {
@@ -435,6 +453,14 @@ const MiniSIEM = () => {
           }}>
             <RefreshCw size={14} /> Refresh
           </button>
+
+          <button className="siem-btn" onClick={logout} style={{
+  padding: '7px 14px', background: 'rgba(239,68,68,0.1)',
+  border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px',
+  color: c.danger, cursor: 'pointer', fontSize: '13px', fontWeight: 500,
+}}>
+  Logout
+</button>
         </div>
       </header>
 
@@ -1086,5 +1112,13 @@ const MiniSIEM = () => {
   );
 };
 
-export default MiniSIEM;
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </ AuthProvider>
+  )
+}
+
+export default App;
 

@@ -5,6 +5,10 @@ const path = require('path');
 const DB_PATH = path.join(__dirname, 'siem.db');
 const SCHEMA_PATH = path.join(__dirname, 'schema.sql');
 
+const bcrypt = require('bcrypt');
+const { v4: uuidv4 } = require('uuid');
+
+
 let db = null;
 
 function initDatabase() {
@@ -15,6 +19,8 @@ function initDatabase() {
     // Read and execute schema
     const schema = fs.readFileSync(SCHEMA_PATH, 'utf8');
     db.exec(schema);
+
+    seedAdmin(db);
 
     console.log('[DB] Database initialized at', DB_PATH);
     return db;
@@ -34,6 +40,26 @@ function closeDatabase() {
         console.log('[DB] Database connection closed');
     }
 }
+
+
+// TRYING: RBAC ADMIN
+
+async function seedAdmin(db) {
+  const adminExists = db.prepare('SELECT * FROM users WHERE username = ?').get('admin');
+
+  if(!adminExists) {
+    const hash = await bcrypt.hash('Password123!', 10);
+    db.prepare('INSERT INTO users (id, username, password_hash, role) VALUES (?,?,?,?)')
+      .run(uuidv4(), 'admin', hash, 'admin');
+
+    console.log("Default admin user created: admin / Password123!");
+  }
+}
+
+
+
+
+
 
 // Event operations
 const eventOps = {

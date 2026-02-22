@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -13,6 +14,7 @@ const alertsRouter = require('./routes/alerts');
 const endpointsRouter = require('./routes/endpoints');
 const rulesRouter = require('./routes/rules');
 const ingestRouter = require('./routes/ingest');
+const authRouter = require('./routes/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -49,6 +51,7 @@ app.use('/api/alerts', alertsRouter);
 app.use('/api/endpoints', endpointsRouter);
 app.use('/api/rules', rulesRouter);
 app.use('/api/ingest', ingestRouter);
+app.use('/api/auth', authRouter)
 
 // Error handling
 app.use((err, req, res) => {
@@ -63,6 +66,7 @@ app.use((err, req, res) => {
 app.use((req, res) => {
     res.status(404).json({ error: 'Not found' });
 });
+
 
 // Create HTTP server
 const server = http.createServer(app);

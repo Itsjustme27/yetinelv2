@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const { ruleOps } = require('../database/init');
+const { protect } = require('../middleware/authMiddleware');
 
-// GET /api/rules - List all rules
-router.get('/', (req, res) => {
+// GET /api/rules - List all rules -> Analysts, Engineers, and Admins can view
+router.get('/', protect(['analyst', 'engineer', 'admin']) ,(req, res) => {
     try {
         const enabledOnly = req.query.enabled === 'true';
         const rules = enabledOnly ? ruleOps.getEnabled() : ruleOps.getAll();
@@ -18,8 +19,8 @@ router.get('/', (req, res) => {
     }
 });
 
-// POST /api/rules - Create new rule
-router.post('/', (req, res) => {
+// POST /api/rules/ - Create new rule -> Only Admins and Engineers can create new rules
+router.post('/', protect(['admin', 'engineer']), (req, res) => {
     try {
         const { name, description, severity, rule_type, conditions, actions, enabled } = req.body;
 
@@ -55,8 +56,8 @@ router.post('/', (req, res) => {
     }
 });
 
-// PATCH /api/rules/:id - Toggle rule enabled/disabled
-router.patch('/:id', (req, res) => {
+// PATCH /api/rules/:id - Toggle rule enabled/disabled -> Only Admins and Engineers can toggle/edit rules
+router.patch('/:id', protect(['engineer', 'admin'])  , (req, res) => {
     try {
         const { enabled } = req.body;
 

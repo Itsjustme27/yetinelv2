@@ -1,5 +1,21 @@
 -- Mini SIEM Database Schema
 
+
+-- New Users Table
+CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    role TEXT CHECK(role IN ('admin', 'analyst', 'engineer')) NOT NULL,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+
+-- Update Alerts table to track who handled the alert
+-- Note: In SQLite, adding a column is safer than a full refactor
+-- ALTER TABLE alerts ADD COLUMN assigned_to_id TEXT;
+
+
+
 -- Events table - stores all security events
 CREATE TABLE IF NOT EXISTS events (
     id TEXT PRIMARY KEY,
