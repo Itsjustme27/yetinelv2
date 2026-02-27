@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Shield, AlertTriangle, Activity, Eye, Database, Network, CheckCircle, Clock, TrendingUp, Server, Cpu, Wifi, WifiOff, RefreshCw, Zap, Search, X } from 'lucide-react';
+import { Shield,AlertTriangle, Activity, Eye, Database, Network, CheckCircle, Clock, TrendingUp, Server, Cpu, Wifi, WifiOff, RefreshCw, Zap, Search, X } from 'lucide-react';
 import siemApi from './api/siemApi';
 import { useWebSocket, ConnectionState } from './hooks/useWebSocket';
-
+import logo from './assets/logo2.png';
 // ── Inline SVG Chart Components ─────────────────────────────────────────────
 
 const Sparkline = ({ data, color = '#22d3ee', width = 120, height = 32 }) => {
@@ -385,16 +385,15 @@ const MiniSIEM = () => {
         alignItems: 'center', justifyContent: 'space-between',
         position: 'sticky', top: 0, zIndex: 50,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{
-            width: '34px', height: '34px', borderRadius: '8px',
-            background: `linear-gradient(135deg, ${c.primary}, ${c.accent})`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <Shield size={18} color="#fff" />
-          </div>
-          <span style={{ fontSize: '16px', fontWeight: 700, letterSpacing: '-0.3px', color: c.text }}>
-            Yetinel
+        <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+            <img src={logo} width={100} height={100}/> 
+          <span style={{ 
+        fontSize: '16px', 
+        fontWeight: 700, 
+        letterSpacing: '-0.3px', 
+        color: c.text,
+        fontFamily: "'Inter', sans-serif" // Add your chosen font here
+    }}>          Yetinel  
           </span>
         </div>
 
