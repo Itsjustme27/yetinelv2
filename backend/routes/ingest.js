@@ -36,9 +36,8 @@ router.post('/batch', async (req, res) => {
         // Update endpoint last seen
         endpointOps.heartbeat(endpoint_id);
 
-        // Parse and process events
+        // Pass 1 — parse every event first.
         const parsedEvents = [];
-        const alerts = [];
 
         for (const rawEvent of rawEvents) {
             try {
@@ -49,28 +48,24 @@ router.post('/batch', async (req, res) => {
                 });
 
                 // Assign ID and endpoint info
-                const event = {
+                parsedEvents.push({
                     id: uuidv4(),
                     ...parsed,
                     endpoint_id,
                     hostname: parsed.hostname || endpoint.hostname,
                     ip_address: parsed.ip_address || endpoint.ip_address,
                     timestamp: rawEvent.timestamp || parsed.timestamp
-                };
-
-                parsedEvents.push(event);
-
-                // Run through detection engine
-                const detectionResult = processEvent(event);
-                if (detectionResult.alerts.length > 0) {
-                    alerts.push(...detectionResult.alerts);
-                }
+                });
             } catch (parseErr) {
                 console.error('[INGEST] Parse error:', parseErr.message);
             }
         }
 
-        // Batch insert events
+        // Persist BEFORE detection. alerts.event_id is a foreign key to
+        // events.id and init.js enables PRAGMA foreign_keys, so an alert raised
+        // before its event row exists fails the constraint. processEvent
+        // catches that per-rule, so it previously failed silently and no batch
+        // event ever produced an alert.
         if (parsedEvents.length > 0) {
             eventOps.insertBatch(parsedEvents);
 
@@ -80,6 +75,15 @@ router.post('/batch', async (req, res) => {
                 count: parsedEvents.length,
                 events: parsedEvents.slice(0, 10) // Send first 10 for UI update
             });
+        }
+
+        // Pass 2 — run detection now that the referenced events exist.
+        const alerts = [];
+        for (const event of parsedEvents) {
+            const detectionResult = processEvent(event);
+            if (detectionResult.alerts.length > 0) {
+                alerts.push(...detectionResult.alerts);
+            }
         }
 
         // Broadcast alerts

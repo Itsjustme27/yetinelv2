@@ -18,6 +18,9 @@ npm-debug.log*
 .env.local
 .env.*.local
 
+# Local agent overrides — holds the agent API key, never commit this
+config.local.json
+
 # Build output
 build/
 dist/

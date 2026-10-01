@@ -28,7 +28,11 @@ param(
     [int]$ServerPort = 3001,
     [int]$BatchSize = 50,
     [int]$PollIntervalSeconds = 5,
-    [int]$HeartbeatIntervalSeconds = 30
+    [int]$HeartbeatIntervalSeconds = 30,
+    # Shared secret for the ingest API. Defaults to the SIEM_AGENT_KEY
+    # environment variable so the secret need not be passed on the command line
+    # (where it would land in process listings and shell history).
+    [string]$AgentKey = $env:SIEM_AGENT_KEY
 )
 
 # Configuration
@@ -37,6 +41,7 @@ $Script:Config = @{
     BatchSize = $BatchSize
     PollInterval = $PollIntervalSeconds
     HeartbeatInterval = $HeartbeatIntervalSeconds
+    AgentKey = $AgentKey
     # Security Event IDs to collect
     EventIds = @(
         4624, 4625,  # Logon success/failure
@@ -90,6 +95,7 @@ function Invoke-SiemRequest {
     $headers = @{
         "Content-Type" = "application/json"
         "User-Agent" = "MiniSIEM-WindowsAgent/1.0"
+        "X-Agent-Key" = $Script:Config.AgentKey
     }
 
     try {
@@ -252,6 +258,11 @@ function Start-Agent {
     Write-Log "INFO" "Server: $($Script:Config.ServerUrl)"
     Write-Log "INFO" "Monitoring Event IDs: $($Script:Config.EventIds -join ', ')"
     Write-Log "INFO" "========================================"
+
+    if ([string]::IsNullOrEmpty($Script:Config.AgentKey)) {
+        Write-Log "WARN" "No agent key set - the server will reject ingest with 401."
+        Write-Log "WARN" "Set `$env:SIEM_AGENT_KEY (must match AGENT_API_KEY in backend/.env)."
+    }
 
     # Register with server
     $maxRetries = 3

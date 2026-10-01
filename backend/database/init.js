@@ -208,7 +208,15 @@ const alertOps = {
     },
 
     getById: (id) => {
-        return getDatabase().prepare('SELECT * FROM alerts WHERE id = ?').get(id);
+        // Same projection as getRecent: alerts carry no hostname/ip of their
+        // own, so they come from the linked event. Without the JOIN this
+        // returned a shape that differed from the list endpoint.
+        return getDatabase().prepare(`
+            SELECT a.*, e.hostname, e.ip_address, e.description as event_description
+            FROM alerts a
+            LEFT JOIN events e ON a.event_id = e.id
+            WHERE a.id = ?
+        `).get(id);
     }
 };
 

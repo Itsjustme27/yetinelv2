@@ -4,6 +4,7 @@
     "port": 3001,
     "ssl": false
   },
+  "agent_api_key": "47cdcadbb8f30567601ac8edd684224acf56a084ce87ebd3e439405b74670741",
   "log_sources": [
     { "path": "/var/log/syslog", "type": "syslog" },
     { "path": "/var/log/auth.log", "type": "auth" },

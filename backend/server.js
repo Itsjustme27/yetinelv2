@@ -1,3 +1,7 @@
+// Load backend/.env before anything reads process.env (PORT, AGENT_API_KEY).
+// This was previously missing, so .env was never actually read.
+require('dotenv').config({ quiet: true });
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -6,6 +10,8 @@ const http = require('http');
 const { initDatabase, endpointOps } = require('./database/init');
 const { initWebSocket } = require('./services/websocketService');
 const { loadDefaultRules } = require('./services/detectionEngine');
+const agentAuth = require('./middleware/agentAuth');
+const rateLimit = require('./middleware/rateLimit');
 
 // Routes
 const eventsRouter = require('./routes/events');
@@ -22,6 +28,11 @@ initDatabase();
 
 // Load default detection rules
 loadDefaultRules();
+
+if (!process.env.AGENT_API_KEY) {
+    console.warn('[SECURITY] AGENT_API_KEY is not set — every /api/ingest request will be refused with 503.');
+    console.warn('[SECURITY] Set it in backend/.env, then set SIEM_AGENT_KEY in each agent.');
+}
 
 // Middleware
 app.use(helmet({
@@ -48,11 +59,32 @@ app.use('/api/events', eventsRouter);
 app.use('/api/alerts', alertsRouter);
 app.use('/api/endpoints', endpointsRouter);
 app.use('/api/rules', rulesRouter);
+
+// Agent ingest gets two protections:
+//   1. a per-IP rate limit, so one source cannot flood the DB
+//   2. a shared secret (X-Agent-Key), so events cannot be forged
+// The dashboard's "Test events" button calls /api/ingest/test from the browser,
+// which cannot hold the agent key. That single route is exempt — but only
+// outside production, where it falls through to agentAuth like everything else.
+app.use('/api/ingest', rateLimit({ windowMs: 60_000, max: 240, keyPrefix: 'ingest' }));
+app.use('/api/ingest', (req, res, next) => {
+    const isDevTestRoute = req.path === '/test' && process.env.NODE_ENV !== 'production';
+    return isDevTestRoute ? next() : agentAuth(req, res, next);
+});
 app.use('/api/ingest', ingestRouter);
 
 // Error handling
-app.use((err, req, res) => {
+// Express only recognises a middleware as an error handler when it declares
+// four parameters. With three it registers as a normal (req, res, next) — which
+// made this run on every unmatched route, log a bogus [ERROR], and then throw
+// on `res.status` (res was really `next`). That also shadowed the 404 below.
+app.use((err, req, res, next) => {
     console.error('[ERROR]', err);
+
+    if (res.headersSent) {
+        return next(err);
+    }
+
     res.status(500).json({
         error: 'Internal server error',
         message: process.env.NODE_ENV === 'development' ? err.message : undefined

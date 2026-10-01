@@ -197,6 +197,21 @@ function getFieldValue(obj, fieldPath) {
     return value;
 }
 
+// Compare values that mean the same thing but may differ in type.
+// Rule conditions come from JSON, so a rule literal of 7045 is a number while
+// the parser may have extracted the string "7045" from a Windows event — a
+// strict === would silently never match. Coercion is deliberately narrow:
+// string and number only, everything else stays strict.
+function looseEquals(a, b) {
+    if (a === b) return true;
+    if (a === null || a === undefined || b === null || b === undefined) return false;
+
+    const coercible = (v) => typeof v === 'string' || typeof v === 'number';
+    if (coercible(a) && coercible(b)) return String(a) === String(b);
+
+    return false;
+}
+
 // Check if condition matches event
 function matchesCondition(event, condition) {
     if (!condition) return false;
@@ -215,7 +230,7 @@ function matchesCondition(event, condition) {
 
     // equals check
     if (condition.equals !== undefined) {
-        if (fieldValue !== condition.equals) return false;
+        if (!looseEquals(fieldValue, condition.equals)) return false;
     }
 
     // contains check
@@ -345,9 +360,18 @@ function processCorrelationRule(event, rule) {
     // Check if current event matches failure pattern (first in sequence)
     const failurePattern = sequence[0]?.match;
     if (failurePattern && matchesCondition(event, failurePattern)) {
-        let state = thresholdState.get(stateKey) || { count: 0, window_start: now, events: [] };
-        state.count++;
+        const failureWindowMs = (sequence[0].window_seconds || 300) * 1000;
+        const state = thresholdState.get(stateKey) || { count: 0, window_start: now, events: [] };
+
         state.events.push({ id: event.id, timestamp: event.timestamp });
+        // Prune outside the window. Without this the array only ever got
+        // filtered at alert time, so a source that failed occasionally but
+        // never tripped the threshold grew this entry without bound.
+        state.events = state.events.filter(
+            (e) => (now - new Date(e.timestamp).getTime()) < failureWindowMs
+        );
+        state.count = state.events.length;
+
         thresholdState.set(stateKey, state);
     }
 
@@ -375,7 +399,12 @@ function createAlert(event, rule, details) {
 
     console.log(`[DETECTION] Alert generated: ${rule.name} - ${details}`);
 
-    return alert;
+    // Re-read before returning. The in-memory object above has no created_at,
+    // updated_at, hostname or ip_address — those are filled in by SQL defaults
+    // and the join in alertOps.getById. Returning the bare object meant every
+    // alert pushed over the WebSocket rendered with blank Created/Updated/Host
+    // fields until the next full refresh replaced it.
+    return alertOps.getById(alert.id) || alert;
 }
 
 // Main event processing function

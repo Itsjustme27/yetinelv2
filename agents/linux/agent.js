@@ -44,6 +44,7 @@ class LinuxAgent {
         this.eventQueue = [];
         this.watchers = new Map();
         this.filePositions = new Map();
+        this.readingFiles = new Set();
         this.isRunning = false;
         this.registered = false;
     }
@@ -95,7 +96,10 @@ class LinuxAgent {
                 method: method,
                 headers: {
                     'Content-Type': 'application/json',
-                    'User-Agent': `MiniSIEM-LinuxAgent/1.0`
+                    'User-Agent': `MiniSIEM-LinuxAgent/1.0`,
+                    // Preferred source is the environment so the secret stays
+                    // out of config.json, which is tracked by git.
+                    'X-Agent-Key': process.env.SIEM_AGENT_KEY || this.config.agent_api_key || ''
                 }
             };
 
@@ -237,41 +241,56 @@ class LinuxAgent {
     }
 
     async readNewLines(filePath, source) {
+        // fs.watch emits several 'change' events for a single append and this
+        // method is async, so overlapping calls used to read from the same
+        // offset and queue the same lines twice — duplicate events, duplicate
+        // alerts, all in one batch. Serialise per file.
+        if (this.readingFiles.has(filePath)) return;
+        this.readingFiles.add(filePath);
+
         try {
-            const stats = fs.statSync(filePath);
-            const currentPos = this.filePositions.get(filePath) || 0;
+            // Loop rather than read once: a write landing mid-read would
+            // otherwise be skipped, because its 'change' event is swallowed by
+            // the guard above and no further event is guaranteed to follow.
+            for (;;) {
+                const stats = fs.statSync(filePath);
+                const currentPos = this.filePositions.get(filePath) || 0;
 
-            // File was truncated (log rotation)
-            if (stats.size < currentPos) {
-                this.log('info', `Log rotation detected for ${filePath}`);
-                this.filePositions.set(filePath, 0);
-                return;
-            }
+                // File was truncated (log rotation)
+                if (stats.size < currentPos) {
+                    this.log('info', `Log rotation detected for ${filePath}`);
+                    this.filePositions.set(filePath, 0);
+                    return;
+                }
 
-            if (stats.size === currentPos) {
-                return; // No new data
-            }
+                if (stats.size === currentPos) {
+                    return; // No new data
+                }
 
-            // Read new content
-            const stream = createReadStream(filePath, {
-                start: currentPos,
-                end: stats.size
-            });
+                // Claim the range before awaiting, so a concurrent call cannot
+                // re-read it.
+                this.filePositions.set(filePath, stats.size);
 
-            const rl = createInterface({
-                input: stream,
-                crlfDelay: Infinity
-            });
+                const stream = createReadStream(filePath, {
+                    start: currentPos,
+                    end: stats.size
+                });
 
-            for await (const line of rl) {
-                if (line.trim()) {
-                    this.queueEvent(line, source);
+                const rl = createInterface({
+                    input: stream,
+                    crlfDelay: Infinity
+                });
+
+                for await (const line of rl) {
+                    if (line.trim()) {
+                        this.queueEvent(line, source);
+                    }
                 }
             }
-
-            this.filePositions.set(filePath, stats.size);
         } catch (err) {
             this.log('error', `Error reading ${filePath}: ${err.message}`);
+        } finally {
+            this.readingFiles.delete(filePath);
         }
     }
 
@@ -282,6 +301,15 @@ class LinuxAgent {
         this.log('info', `Agent ID: ${this.agentId}`);
         this.log('info', `Server: ${this.config.server.host}:${this.config.server.port}`);
         this.log('info', '========================================');
+
+        if (!process.env.SIEM_AGENT_KEY && !this.config.agent_api_key) {
+            this.log('warn', 'No agent key configured — the server will reject ingest with 401.');
+            this.log('warn', 'Fix either way:');
+            this.log('warn', '  a) add "agent_api_key" to agents/linux/config.local.json (gitignored)');
+            this.log('warn', '  b) pass it inline so sudo keeps it:');
+            this.log('warn', '     sudo SIEM_AGENT_KEY=<key> node agents/linux/agent.js');
+            this.log('warn', 'It must match AGENT_API_KEY in backend/.env.');
+        }
 
         // Register with server
         let retries = 0;
@@ -367,19 +395,38 @@ function loadConfig() {
         }
     }
 
-    // Check for default config file
-    const defaultConfigPath = path.join(__dirname, 'config.json');
-    if (fs.existsSync(defaultConfigPath)) {
+    const basePath = path.join(__dirname, 'config.json');
+    const localPath = path.join(__dirname, 'config.local.json');
+
+    let base = {};
+    if (fs.existsSync(basePath)) {
         try {
-            const config = JSON.parse(fs.readFileSync(defaultConfigPath, 'utf8'));
+            base = JSON.parse(fs.readFileSync(basePath, 'utf8'));
             console.log('Loaded configuration from config.json');
-            return config;
         } catch (err) {
             console.error(`Failed to load default config: ${err.message}`);
         }
     }
 
-    return {};
+    // config.local.json is gitignored and merged on top. It exists so the agent
+    // key can live somewhere a tracked file never will, and so the agent does
+    // not depend on the caller's shell environment — `sudo` resets the
+    // environment by default, which silently drops an exported SIEM_AGENT_KEY.
+    if (fs.existsSync(localPath)) {
+        try {
+            const local = JSON.parse(fs.readFileSync(localPath, 'utf8'));
+            base = {
+                ...base,
+                ...local,
+                server: { ...(base.server || {}), ...(local.server || {}) },
+            };
+            console.log('Applied overrides from config.local.json');
+        } catch (err) {
+            console.error(`Failed to load config.local.json: ${err.message}`);
+        }
+    }
+
+    return base;
 }
 
 // Main

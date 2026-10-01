@@ -2,23 +2,53 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#0a0e1a" />
-    <meta name="description" content="Mini SIEM Dashboard - Security Information and Event Management" />
-    <title>Yetinel Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0a0d14" />
+    <meta name="description" content="Yetinel — SIEM console for real-time security monitoring, alert triage and endpoint health" />
+    <title>Yetinel · SIEM Console</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    >
+
+    <script>
+      /* Resolve the theme before first paint. Doing this in React would show a
+         flash of the wrong palette, since the bundle loads after the HTML. */
+      (function () {
+        try {
+          var stored = localStorage.getItem('yetinel:theme');
+          var theme = (stored === 'light' || stored === 'dark')
+            ? stored
+            : (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+          document.documentElement.setAttribute('data-theme', theme);
+
+          var dark = { bg: '#0a0d14', bar: '#0a0d14' };
+          var light = { bg: '#f6f7fa', bar: '#ffffff' };
+          var c = theme === 'light' ? light : dark;
+          document.documentElement.style.background = c.bg;
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute('content', c.bar);
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
+
     <style>
+      html { background: #0a0d14; }
+      html[data-theme='light'] { background: #f6f7fa; }
+
       body {
         margin: 0;
-        font-family: 'JetBrains Mono', 'Courier New', monospace;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
       }
-      * {
-        box-sizing: border-box;
-      }
+
+      *, *::before, *::after { box-sizing: border-box; }
     </style>
   </head>
   <body>
